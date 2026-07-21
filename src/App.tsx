@@ -1,122 +1,84 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useMemo, useState } from 'react'
+import { QueueList } from './components/QueueList'
+import { useConversationsQuery, useUpdateConversationStatus } from './hooks/useConversations'
+import { computeUrgency, sortByUrgency } from './lib/urgency'
 
-function App() {
-  const [count, setCount] = useState(0)
+const CURRENT_AGENT = 'Alex Rivera'
+
+export default function App() {
+  const { data: conversations, isLoading, isError, error, refetch } = useConversationsQuery()
+  const mutation = useUpdateConversationStatus()
+
+  // Re-derive urgency on a slow tick so SLA countdowns and wait times
+  // stay roughly live without needing a real-time backend.
+  const [tick, setTick] = useState(0)
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((t) => t + 1), 30_000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  const now = useMemo(() => new Date(), [tick])
+  const sorted = useMemo(
+    () => (conversations ? sortByUrgency(conversations, now) : []),
+    [conversations, now],
+  )
+  const urgencyById = useMemo(
+    () => new Map(sorted.map((c) => [c.id, computeUrgency(c, now)])),
+    [sorted, now],
+  )
+
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  useEffect(() => {
+    setSelectedIndex((i) => Math.min(i, Math.max(sorted.length - 1, 0)))
+  }, [sorted.length])
+
+  const selected = sorted[selectedIndex]
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <div className="flex h-screen flex-col">
+      <header className="flex items-center justify-between border-b border-line px-5 py-3">
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
+          <h1 className="text-sm font-semibold uppercase tracking-wide text-ink">Triage Queue</h1>
+          <p className="text-xs text-muted">Signed in as {CURRENT_AGENT}</p>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      </header>
 
-      <div className="ticks"></div>
+      <div className="flex min-h-0 flex-1">
+        <div className="flex w-[380px] shrink-0 flex-col border-r border-line">
+          {/* {isLoading && <QueueSkeleton />} */}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+          {isError && (
+            <div className="p-4">
+              {/* <ErrorBanner
+                message={error instanceof Error ? error.message : 'Could not load the queue.'}
+                onRetry={() => void refetch()}
+                onDismiss={() => void refetch()}
+              /> */}
+            </div>
+          )}
+
+          {/* {!isLoading && !isError && sorted.length === 0 && <EmptyState variant="caught-up" />} */}
+
+          {!isLoading && !isError && sorted.length > 0 && (
+            <QueueList
+              conversations={sorted}
+              urgencyById={urgencyById}
+              selectedIndex={selectedIndex}
+              onSelectIndex={setSelectedIndex}
+            />
+          )}
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        <main className="min-w-0 flex-1">
+          {/* {isLoading && <ConversationSkeleton />} */}
+          {/* {!isLoading && selected && (
+            <ConversationPanel key={selected.id} conversation={selected} agentName={CURRENT_AGENT} mutation={mutation} />
+          )} */}
+          {/* {!isLoading && !selected && <EmptyState variant="no-selection" />} */}
+        </main>
+      </div>
+
+      {/* <KeyboardHints /> */}
+    </div>
   )
 }
-
-export default App
