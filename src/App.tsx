@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { QueueList } from './components/QueueList'
 import { useConversationsQuery, useUpdateConversationStatus } from './hooks/useConversations'
+import { ConversationPanel } from './components/ConversationPanel'
 import { computeUrgency, sortByUrgency } from './lib/urgency'
 
 const CURRENT_AGENT = 'Alex Rivera'
@@ -71,9 +72,9 @@ export default function App() {
 
         <main className="min-w-0 flex-1">
           {/* {isLoading && <ConversationSkeleton />} */}
-          {/* {!isLoading && selected && (
+          {!isLoading && selected && (
             <ConversationPanel key={selected.id} conversation={selected} agentName={CURRENT_AGENT} mutation={mutation} />
-          )} */}
+          )}
           {/* {!isLoading && !selected && <EmptyState variant="no-selection" />} */}
         </main>
       </div>
