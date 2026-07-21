@@ -7,7 +7,7 @@ import { computeUrgency, sortByUrgency } from './lib/urgency'
 const CURRENT_AGENT = 'Alex Rivera'
 
 export default function App() {
-  const { data: conversations, isLoading, isError, error, refetch } = useConversationsQuery()
+  const { data: conversations, isLoading, isError } = useConversationsQuery()
   const mutation = useUpdateConversationStatus()
 
   // Re-derive urgency on a slow tick so SLA countdowns and wait times

@@ -203,7 +203,7 @@ export const TOTAL_MOCK_CONVERSATIONS = 24
 
 /**
  * conv-013 is reserved as the "always fails" write path required by the brief,
- * independent of the DebugPanel's force-failure toggle. Kept as a stable ID
+ * and is kept as a stable ID so failure handling can be exercised reliably.
  */
 export const ALWAYS_FAILS_ID = 'conv-013'
 
