@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { QueueList } from './components/QueueList'
-import { useConversationsQuery, useUpdateConversationStatus } from './hooks/useConversations'
 import { ConversationPanel } from './components/ConversationPanel'
+import { EmptyState } from './components/EmptyState'
+import { QueueSkeleton, ConversationSkeleton } from './components/Skeletons'
+import { ErrorBanner } from './components/ErrorBanner'
+import { KeyboardHints } from './components/KeyboardHints'
+import { StatsStrip } from './components/StatsStrip'
+import { useConversationsQuery, useUpdateConversationStatus } from './hooks/useConversations'
+import { useKeyboardNav } from './hooks/useKeyboardNav'
 import { computeUrgency, sortByUrgency } from './lib/urgency'
 
 const CURRENT_AGENT = 'Alex Rivera'
 
 export default function App() {
-  const { data: conversations, isLoading, isError } = useConversationsQuery()
+  const { data: conversations, isLoading, isError, error, refetch } = useConversationsQuery()
   const mutation = useUpdateConversationStatus()
 
   // Re-derive urgency on a slow tick so SLA countdowns and wait times
@@ -35,6 +41,15 @@ export default function App() {
 
   const selected = sorted[selectedIndex]
 
+  useKeyboardNav({
+    itemCount: sorted.length,
+    selectedIndex,
+    onSelectIndex: setSelectedIndex,
+    onClaim: () => selected && mutation.mutate({ id: selected.id, status: 'claimed', assignedAgent: CURRENT_AGENT }),
+    onResolve: () => selected && mutation.mutate({ id: selected.id, status: 'resolved' }),
+    onSnooze: () => selected && mutation.mutate({ id: selected.id, status: 'snoozed' }),
+  })
+
   return (
     <div className="flex h-screen flex-col">
       <header className="flex items-center justify-between border-b border-line px-5 py-3">
@@ -42,23 +57,24 @@ export default function App() {
           <h1 className="text-sm font-semibold uppercase tracking-wide text-ink">Triage Queue</h1>
           <p className="text-xs text-muted">Signed in as {CURRENT_AGENT}</p>
         </div>
+        {conversations && <StatsStrip conversations={conversations} />}
       </header>
 
       <div className="flex min-h-0 flex-1">
         <div className="flex w-[380px] shrink-0 flex-col border-r border-line">
-          {/* {isLoading && <QueueSkeleton />} */}
+          {isLoading && <QueueSkeleton />}
 
           {isError && (
             <div className="p-4">
-              {/* <ErrorBanner
+              <ErrorBanner
                 message={error instanceof Error ? error.message : 'Could not load the queue.'}
                 onRetry={() => void refetch()}
                 onDismiss={() => void refetch()}
-              /> */}
+              />
             </div>
           )}
 
-          {/* {!isLoading && !isError && sorted.length === 0 && <EmptyState variant="caught-up" />} */}
+          {!isLoading && !isError && sorted.length === 0 && <EmptyState variant="caught-up" />}
 
           {!isLoading && !isError && sorted.length > 0 && (
             <QueueList
@@ -71,15 +87,15 @@ export default function App() {
         </div>
 
         <main className="min-w-0 flex-1">
-          {/* {isLoading && <ConversationSkeleton />} */}
+          {isLoading && <ConversationSkeleton />}
           {!isLoading && selected && (
             <ConversationPanel key={selected.id} conversation={selected} agentName={CURRENT_AGENT} mutation={mutation} />
           )}
-          {/* {!isLoading && !selected && <EmptyState variant="no-selection" />} */}
+          {!isLoading && !selected && <EmptyState variant="no-selection" />}
         </main>
       </div>
 
-      {/* <KeyboardHints /> */}
+      <KeyboardHints />
     </div>
   )
 }
