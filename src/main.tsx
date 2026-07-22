@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
 import App from './App'
 import { queryClient } from './lib/queryClient'
+// @ts-ignore: side-effect import for CSS file
 import './index.css'
 
 async function prepare() {
