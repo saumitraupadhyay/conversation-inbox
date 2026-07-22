@@ -77,11 +77,11 @@ manager dashboard.
 
 ### Inbox
 
-![INBOX](image.png)
+![INBOX](/conversation-inbox/docs/screenshots/inbox.png)
 
 ### Conversation Details
 
-![CONVO DETAILS](image-1.png)
+![CONVO DETAILS](/conversation-inbox/docs/screenshots/conversation%20details.png)
 
 ## What's intentionally excluded (and why)
 
